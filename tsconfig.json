@@ -4,7 +4,7 @@
     "moduleResolution": "Node",
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
-    "jsx": "react-jsx",
+    "jsx": "react",
     "noImplicitThis": true,
     "strict": true,
     "isolatedModules": true,
