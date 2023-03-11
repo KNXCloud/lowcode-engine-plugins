@@ -5,7 +5,8 @@
   "typings": "./dist/lowcode-plugin-vue-code-editor.d.ts",
   "scripts": {
     "start": "vite build --watch",
-    "build": "vite build"
+    "build": "vite build",
+    "prepare": "pnpm build"
   },
   "devDependencies": {
     "@alifd/next": "^1.26.15",

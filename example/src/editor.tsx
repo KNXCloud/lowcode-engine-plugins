@@ -67,7 +67,7 @@ const save = async () => {
     props: {},
   });
 
-  const loadedAssets = await fetch('http://127.0.0.1:9000/assets.json')
+  const loadedAssets = await fetch('/materials/naive-ui/assets.min.json')
     .then((res) => res.json())
     .catch(() => null);
   loadedAssets && material.setAssets(loadedAssets);
