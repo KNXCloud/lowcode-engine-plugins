@@ -1,3 +1,30 @@
 {
-  "name": "@knxcloud/lowcode-plugin-vue-code-editor"
+  "name": "@knxcloud/lowcode-plugin-vue-code-editor",
+  "main": "./dist/lowcode-plugin-vue-code-editor.js",
+  "module": "./dist/lowcode-plugin-vue-code-editor.mjs",
+  "typings": "./dist/lowcode-plugin-vue-code-editor.d.ts",
+  "scripts": {
+    "start": "vite build --watch",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "@alifd/next": "^1.26.15",
+    "@alilc/lowcode-types": "^1.1.3",
+    "@types/react": "^16.14.35",
+    "@types/react-dom": "^16.9.18",
+    "@vitejs/plugin-react": "^3.1.0",
+    "less": "^4.1.3",
+    "unocss": "^0.50.4",
+    "vite": "^4.1.4",
+    "vite-plugin-lib-types": "^0.1.1"
+  },
+  "peerDependencies": {
+    "@alifd/next": "*",
+    "react": ">=16"
+  },
+  "dependencies": {
+    "@alilc/lowcode-plugin-base-monaco-editor": "^1.1.1",
+    "@vue/compiler-core": "^3.2.47",
+    "monaco-editor": "^0.36.1"
+  }
 }

@@ -1,19 +1,23 @@
 module.exports = {
   extends: [
-    'stylelint-config-prettier',
     'stylelint-config-standard',
+    'stylelint-config-prettier',
     'stylelint-config-rational-order',
-    'stylelint-config-recommended-vue',
-    'stylelint-config-recommended-scss',
+    'stylelint-config-recommended-less',
   ],
   rules: {
     'at-rule-no-unknown': null,
+    'no-descending-specificity': null,
+    'color-no-invalid-hex': true,
+    'less/color-no-invalid-hex': true,
+    'no-descending-specificity': null,
     'declaration-block-trailing-semicolon': null,
     'font-family-no-missing-generic-family-keyword': null,
-    'no-descending-specificity': null,
-    'selector-class-pattern': [
-      /^[a-z]+((-|--|__)[a-z]+)*$/,
-      { resolveNestedSelectors: true },
-    ],
   },
+  overrides: [
+    {
+      files: ['**/*.less'],
+      customSyntax: 'postcss-less',
+    },
+  ],
 };
