@@ -14,6 +14,9 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
+  rules: {
+    '@typescript-eslint/ban-ts-comment': 'off',
+  },
   overrides: [
     {
       files: '*.js',

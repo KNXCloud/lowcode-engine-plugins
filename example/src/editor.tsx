@@ -47,7 +47,8 @@ const save = async () => {
 
   // setters
   const { setterMap, pluginMap } = AliLowCodeEngineExt;
-  setters.registerSetter(setterMap as any);
+  // @ts-ignore
+  setters.registerSetter(setterMap);
   // 注册插件
   // 注册事件绑定面板
   skeleton.add({
@@ -98,6 +99,10 @@ const save = async () => {
       enableCanvasLock: true,
       supportVariableGlobally: true,
       simulatorUrl: ['/js/vue-simulator-renderer.js', '/js/vue-simulator-renderer.css'],
+      // simulatorUrl: [
+      //   'https://unpkg.com/@knxcloud/lowcode-vue-simulator-renderer@1.5.8/dist/vue-simulator-renderer.js',
+      //   'https://unpkg.com/@knxcloud/lowcode-vue-simulator-renderer@1.5.8/dist/vue-simulator-renderer.css',
+      // ],
     });
   }
 })();

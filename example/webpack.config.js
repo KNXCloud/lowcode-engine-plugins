@@ -14,6 +14,7 @@ const configuration = {
   devServer: {
     client: {
       overlay: false,
+      logging: 'none',
     },
   },
   resolve: {
