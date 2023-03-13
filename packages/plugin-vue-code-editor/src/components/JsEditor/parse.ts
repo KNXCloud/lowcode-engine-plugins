@@ -257,23 +257,23 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
         case 'watch': {
           const initWatch: Record<string, unknown> = {};
           if (value.type === 'ObjectExpression') {
-            for (const methdProp of value.properties) {
-              if (methdProp.value.type === 'FunctionExpression') {
-                initWatch[getPropName(methdProp.key)] = {
+            for (const watchProp of value.properties) {
+              if (watchProp.value.type === 'FunctionExpression') {
+                initWatch[getPropName(watchProp.key)] = {
                   type: 'JSFunction',
                   value: `function ${s.slice(
-                    methdProp.value.start,
-                    methdProp.value.end
+                    watchProp.value.start,
+                    watchProp.value.end
                   )}`,
                 };
-              } else if (methdProp.value.type === 'ArrowFunctionExpression') {
-                initWatch[getPropName(methdProp.key)] = {
+              } else if (watchProp.value.type === 'ArrowFunctionExpression') {
+                initWatch[getPropName(watchProp.key)] = {
                   type: 'JSExpression',
-                  value: `${s.slice(methdProp.value.start, methdProp.value.end)}`,
+                  value: `${s.slice(watchProp.value.start, watchProp.value.end)}`,
                 };
-              } else if (methdProp.value.type === 'ArrayExpression') {
+              } else if (watchProp.value.type === 'ArrayExpression') {
                 const watchElements: unknown[] = [];
-                for (const element of methdProp.value.elements) {
+                for (const element of watchProp.value.elements) {
                   if (element.type === 'ObjectExpression') {
                     const watchProps: Record<string, unknown> = {};
                     for (const watchProp of element.properties) {
@@ -308,29 +308,31 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
                   }
                 }
                 if (watchElements.length > 0) {
-                  initWatch[getPropName(methdProp.key)] = watchElements;
+                  initWatch[getPropName(watchProp.key)] = watchElements;
                 }
-              } else if (methdProp.value.type === 'ObjectExpression') {
+              } else if (watchProp.value.type === 'ObjectExpression') {
                 const watchProps: Record<string, unknown> = {};
-                for (const watchProp of methdProp.value.properties) {
-                  if (watchProp.value.type === 'Literal') {
-                    watchProps[getPropName(watchProp.key)] = watchProp.value.value;
-                  } else if (watchProp.value.type === 'ArrowFunctionExpression') {
-                    watchProps[getPropName(watchProp.key)] = {
+                for (const watchOption of watchProp.value.properties) {
+                  if (watchOption.value.type === 'Literal') {
+                    watchProps[getPropName(watchOption.key)] = watchOption.value.value;
+                  } else if (watchOption.value.type === 'ArrowFunctionExpression') {
+                    watchProps[getPropName(watchOption.key)] = {
                       type: 'JSExpression',
-                      value: s.slice(watchProp.value.start, watchProp.value.end),
+                      value: s.slice(watchOption.value.start, watchOption.value.end),
                     };
-                  } else if (watchProp.value.type === 'FunctionExpression') {
-                    watchProps[getPropName(watchProp.key)] = {
+                  } else if (watchOption.value.type === 'FunctionExpression') {
+                    watchProps[getPropName(watchOption.key)] = {
                       type: 'JSFunction',
                       value: `function ${s.slice(
-                        watchProp.value.start,
-                        watchProp.value.end
+                        watchOption.value.start,
+                        watchOption.value.end
                       )}`,
                     };
                   }
                 }
-                initWatch[getPropName(methdProp.key)] = watchProps;
+                initWatch[getPropName(watchProp.key)] = watchProps;
+              } else if (watchProp.value.type === 'Literal') {
+                initWatch[getPropName(watchProp.key)] = watchProp.value.value;
               }
             }
           }
@@ -344,12 +346,12 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
           if (value.type === 'ObjectExpression') {
             for (const prop of value.properties) {
               if (prop.value.type === 'FunctionExpression') {
-                methods[getPropName(prop.key)] = {
+                initComputed[getPropName(prop.key)] = {
                   type: 'JSFunction',
                   value: `function ${s.slice(prop.value.start, prop.value.end)}`,
                 };
               } else if (prop.value.type === 'ArrowFunctionExpression') {
-                methods[getPropName(prop.key)] = {
+                initComputed[getPropName(prop.key)] = {
                   type: 'JSExpression',
                   value: `${s.slice(prop.value.start, prop.value.end)}`,
                 };
