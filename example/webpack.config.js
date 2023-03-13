@@ -1,5 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { DefinePlugin, node } = require('webpack');
+const { DefinePlugin } = require('webpack');
 
 /**
  * @type {import('webpack').Configuration}
