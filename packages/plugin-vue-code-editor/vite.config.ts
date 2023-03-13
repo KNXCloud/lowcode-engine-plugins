@@ -13,6 +13,7 @@ import { dependencies, peerDependencies } from './package.json';
 
 export default defineConfig({
   build: {
+    target: 'ES2018',
     lib: {
       entry: './src/index.tsx',
       formats: ['es', 'cjs'],
