@@ -34,5 +34,13 @@
     "magic-string": "^0.30.0",
     "monaco-editor": "^0.36.1",
     "short-uuid": "^4.2.2"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "http",
+    "url": "https://github.com/KNXCloud/lowcode-engine-plugins/tree/main/packages/plugin-vue-code-editor"
   }
 }
