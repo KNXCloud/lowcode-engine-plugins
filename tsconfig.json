@@ -6,6 +6,7 @@
     "useDefineForClassFields": true,
     "jsx": "react",
     "noImplicitThis": true,
+    "noImplicitAny": false,
     "strict": true,
     "isolatedModules": true,
     "preserveValueImports": true,

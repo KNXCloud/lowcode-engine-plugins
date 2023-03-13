@@ -1,18 +1,16 @@
 export const defaultCode = `
-  export default class LowcodeComponent extends Component {
-    // 可以在 state 中定义搭建所需要的 State
-    state = {
-      test: 1,
-      aaa: 2
-    }
+import { defineComponent } from 'vue';
 
-    testFunc() {
-      console.log('test func lowcode');
-      return (
-        <div className="aa">
-          {this.state.test}
-        </div>
-      );
-    }
-  }
+export default defineComponent({
+  props: {
+/*@{props:4}*/
+  },
+  data: () => ({
+/*@{data:4}*/
+  }),
+  methods: {
+/*@{methods:4}*/
+  },
+/*@{lifeCycles:2}*/
+})
 `;

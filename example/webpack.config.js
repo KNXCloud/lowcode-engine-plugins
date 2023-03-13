@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const { DefinePlugin, node } = require('webpack');
 
 /**
  * @type {import('webpack').Configuration}
@@ -6,9 +7,15 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const configuration = {
   mode: 'development',
   entry: './src/editor.tsx',
+  target: 'web',
   plugins: [
     new HtmlWebpackPlugin({
       template: './public/index.html',
+    }),
+    new DefinePlugin({
+      'process.env': {
+        BABEL_TYPES_8_BREAKING: JSON.stringify(true),
+      },
     }),
   ],
   devServer: {

@@ -4,10 +4,9 @@ import icon from './icon';
 import { CodeEditorPane } from './pane';
 import 'uno.css';
 
-const plugin = ({ project, skeleton, event }: IPublicModelPluginContext) => {
+const plugin = ({ project, skeleton, event, material }: IPublicModelPluginContext) => {
   return {
     name: 'vueCodeEditor',
-    width: 600,
     // 依赖的插件（插件名数组）
     dep: [],
     // 插件对外暴露的数据和方法
@@ -25,10 +24,17 @@ const plugin = ({ project, skeleton, event }: IPublicModelPluginContext) => {
           description: '源码面板',
         },
         panelProps: {
-          width: '600px',
+          width: '500px',
           title: '源码面板',
         },
-        content: <CodeEditorPane project={project} skeleton={skeleton} event={event} />,
+        content: (
+          <CodeEditorPane
+            material={material}
+            project={project}
+            skeleton={skeleton}
+            event={event}
+          />
+        ),
       });
 
       schemaDock && schemaDock.disable();
