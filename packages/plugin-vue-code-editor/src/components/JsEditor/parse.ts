@@ -1,6 +1,7 @@
-import type { Program, ObjectExpression } from '@babel/types';
+import type { Program, ObjectExpression, FunctionExpression } from '@babel/types';
 import MagicString from 'magic-string';
 import { parse } from 'acorn';
+import type { IPublicTypeJSFunction } from '@alilc/lowcode-types';
 
 interface ImportStatement {
   type: 'import';
@@ -24,6 +25,29 @@ const initModuleTemp = `
   return exports;
 }})()
 `.trim();
+
+function getPropName(propKey: any) {
+  if (propKey.type === 'Identifier') {
+    return propKey.name;
+  } else {
+    return propKey.value;
+  }
+}
+
+function parseFunction(s: MagicString, node: FunctionExpression): IPublicTypeJSFunction {
+  const code = s.slice(node.start!, node.end!);
+  let prefix = '';
+  if (node.async) {
+    prefix += 'async ';
+  }
+  if (!code.startsWith('function')) {
+    prefix += 'function ';
+  }
+  return {
+    type: 'JSFunction',
+    value: prefix + code,
+  };
+}
 
 export function parseCode(id: string, code: string, libraryMap: Record<string, string>) {
   const s = new MagicString(code);
@@ -158,14 +182,6 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
     };
   }
 
-  function getPropName(propKey: any) {
-    if (propKey.type === 'Identifier') {
-      return propKey.name;
-    } else {
-      return propKey.value;
-    }
-  }
-
   // 处理组件内容
   if (compNode != null) {
     for (const property of compNode.properties as any[]) {
@@ -197,10 +213,7 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
               if (item.value.type === 'Literal' && !item.value.regex) {
                 data[getPropName(item.key)] = item.value.value;
               } else if (item.value.type === 'FunctionExpression') {
-                data[getPropName(item.key)] = {
-                  type: 'JSFunction',
-                  value: `function ${s.slice(item.value.start, item.value.end)}`,
-                };
+                data[getPropName(item.key)] = parseFunction(s, item.value);
               } else {
                 data[getPropName(item.key)] = {
                   type: 'JSExpresssion',
@@ -209,10 +222,7 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
               }
             });
           } else if (method) {
-            lifeCycles['initData'] = {
-              type: 'JSFunction',
-              value: `function ${s.slice(value.start, value.end)}`,
-            };
+            lifeCycles['initData'] = parseFunction(s, value);
           } else if (value.type === 'ArrowFunctionExpression') {
             lifeCycles['initData'] = {
               type: 'JSExpresssion',
@@ -234,13 +244,7 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
           if (value.type === 'ObjectExpression') {
             for (const methdProp of value.properties) {
               if (methdProp.method && methdProp.value.type === 'FunctionExpression') {
-                methods[getPropName(methdProp.key)] = {
-                  type: 'JSFunction',
-                  value: `function ${s.slice(
-                    methdProp.value.start,
-                    methdProp.value.end
-                  )}`,
-                };
+                methods[getPropName(methdProp.key)] = parseFunction(s, methdProp.value);
               } else if (
                 !methdProp.method &&
                 methdProp.value.type === 'ArrowFunctionExpression'
@@ -259,13 +263,7 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
           if (value.type === 'ObjectExpression') {
             for (const watchProp of value.properties) {
               if (watchProp.value.type === 'FunctionExpression') {
-                initWatch[getPropName(watchProp.key)] = {
-                  type: 'JSFunction',
-                  value: `function ${s.slice(
-                    watchProp.value.start,
-                    watchProp.value.end
-                  )}`,
-                };
+                initWatch[getPropName(watchProp.key)] = parseFunction(s, watchProp.value);
               } else if (watchProp.value.type === 'ArrowFunctionExpression') {
                 initWatch[getPropName(watchProp.key)] = {
                   type: 'JSExpression',
@@ -285,21 +283,15 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
                           value: s.slice(watchProp.value.start, watchProp.value.end),
                         };
                       } else if (watchProp.value.type === 'FunctionExpression') {
-                        watchProps[getPropName(watchProp.key)] = {
-                          type: 'JSFunction',
-                          value: `function ${s.slice(
-                            watchProp.value.start,
-                            watchProp.value.end
-                          )}`,
-                        };
+                        watchProps[getPropName(watchProp.key)] = parseFunction(
+                          s,
+                          watchProp.value
+                        );
                       }
                     }
                     watchElements.push(watchProps);
                   } else if (element.type === 'FunctionExpression') {
-                    watchElements.push({
-                      type: 'JSFunction',
-                      value: `${s.slice(element.start, element.end)}`,
-                    });
+                    watchElements.push(parseFunction(s, element));
                   } else if (element.type === 'ArrowFunctionExpression') {
                     watchElements.push({
                       type: 'JSExpression',
@@ -321,13 +313,10 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
                       value: s.slice(watchOption.value.start, watchOption.value.end),
                     };
                   } else if (watchOption.value.type === 'FunctionExpression') {
-                    watchProps[getPropName(watchOption.key)] = {
-                      type: 'JSFunction',
-                      value: `function ${s.slice(
-                        watchOption.value.start,
-                        watchOption.value.end
-                      )}`,
-                    };
+                    watchProps[getPropName(watchOption.key)] = parseFunction(
+                      s,
+                      watchOption.value
+                    );
                   }
                 }
                 initWatch[getPropName(watchProp.key)] = watchProps;
@@ -346,10 +335,7 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
           if (value.type === 'ObjectExpression') {
             for (const prop of value.properties) {
               if (prop.value.type === 'FunctionExpression') {
-                initComputed[getPropName(prop.key)] = {
-                  type: 'JSFunction',
-                  value: `function ${s.slice(prop.value.start, prop.value.end)}`,
-                };
+                initComputed[getPropName(prop.key)] = parseFunction(s, prop.value);
               } else if (prop.value.type === 'ArrowFunctionExpression') {
                 initComputed[getPropName(prop.key)] = {
                   type: 'JSExpression',
@@ -364,13 +350,10 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
                       value: s.slice(computedProp.value.start, computedProp.value.end),
                     };
                   } else if (computedProp.value.type === 'FunctionExpression') {
-                    computedProps[getPropName(computedProp.key)] = {
-                      type: 'JSFunction',
-                      value: `function ${s.slice(
-                        computedProp.value.start,
-                        computedProp.value.end
-                      )}`,
-                    };
+                    computedProps[getPropName(computedProp.key)] = parseFunction(
+                      s,
+                      computedProp.value
+                    );
                   }
                 }
                 initComputed[getPropName(prop.key)] = computedProps;
@@ -384,11 +367,8 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
         }
         default:
           if (value.type === 'FunctionExpression') {
-            lifeCycles[getPropName(property.key)] = {
-              type: 'JSFunction',
-              value: `function ${s.slice(value.start, value.end)}`,
-            };
-          } else if (value.type === 'FunctionExpression') {
+            lifeCycles[getPropName(property.key)] = parseFunction(s, value);
+          } else if (value.type === 'ArrowFunctionExpression') {
             lifeCycles[getPropName(property.key)] = {
               type: 'JSExpression',
               value: s.slice(value.start, value.end),
