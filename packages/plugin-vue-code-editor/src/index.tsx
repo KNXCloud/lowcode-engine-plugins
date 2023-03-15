@@ -3,6 +3,7 @@ import React from 'react';
 import icon from './icon';
 import { CodeEditorPane } from './pane';
 import 'uno.css';
+import './style.css';
 
 const plugin = ({ project, skeleton, event, material }: IPublicModelPluginContext) => {
   return {

@@ -12,7 +12,8 @@ import PropTypes from 'prop-types';
 import MonacoEditor from '@alilc/lowcode-plugin-base-monaco-editor';
 import '@alilc/lowcode-plugin-base-monaco-editor/lib/style';
 
-import vueTypeCode from './vue-types';
+import vueTypeCode from './types/vue';
+import vueRouterTypeCode from './types/vue-router';
 import { generate } from 'short-uuid';
 import { isFunction } from '@knxcloud/lowcode-utils';
 import { parseCode } from './parse';
@@ -107,6 +108,10 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
     });
 
     monaco.languages.typescript.typescriptDefaults.addExtraLib(vueTypeCode, 'vue.d.ts');
+    monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      vueRouterTypeCode,
+      'vue-router.d.ts'
+    );
   }, []);
 
   return (
