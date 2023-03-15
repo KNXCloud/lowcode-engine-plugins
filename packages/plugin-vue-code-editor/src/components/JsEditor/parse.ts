@@ -21,7 +21,9 @@ interface NormalStatement {
 type UsageStatement = ImportStatement | NormalStatement;
 
 function createInitModuleCode(id: string, code: string) {
-  return `(() => {const $id = ${JSON.parse(id)}; return ($cached, $scope = window) => {
+  return `(() => {const $id = ${JSON.stringify(
+    id
+  )}; return ($cached, $scope = window) => {
   if ($id in $cached) return $cached[$id];
   const exports = $cached[$id] = {};
   ${code}
@@ -213,7 +215,10 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
     Object.keys(globalVars).forEach((varName) => {
       code.push(`  exports.${varName} = ${globalVars[varName]};`);
     });
-    lifeCycles['initModule'] = createInitModuleCode(id, code.join('\n'));
+    lifeCycles['initModule'] = {
+      type: 'JSExpression',
+      value: createInitModuleCode(id, code.join('\n')),
+    };
   }
 
   // 处理组件内容
