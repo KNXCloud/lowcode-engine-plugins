@@ -1,7 +1,10 @@
-import type { Program, ObjectExpression, FunctionExpression } from '@babel/types';
+import type { Program } from '@babel/types';
 import MagicString from 'magic-string';
 import { parse } from 'acorn';
-import type { IPublicTypeJSFunction } from '@alilc/lowcode-types';
+import type {
+  IPublicTypeJSExpression,
+  IPublicTypeJSFunction,
+} from '@alilc/lowcode-types';
 
 interface ImportStatement {
   type: 'import';
@@ -17,14 +20,22 @@ interface NormalStatement {
 
 type UsageStatement = ImportStatement | NormalStatement;
 
-const initModuleTemp = `
-(() => {const $id = @{id}; return ($cached, $scope = window) => {
+function createInitModuleCode(id: string, code: string) {
+  return `(() => {const $id = ${JSON.parse(id)}; return ($cached, $scope = window) => {
   if ($id in $cached) return $cached[$id];
   const exports = $cached[$id] = {};
-  @{expressions}
+  ${code}
   return exports;
-}})()
-`.trim();
+}})()`;
+}
+
+function parseLocalName(name: string) {
+  if (name === '$id' || name === '$cached' || name === '$scope' || name === 'exports') {
+    return '_' + name;
+  } else {
+    return name;
+  }
+}
 
 function getPropName(propKey: any) {
   if (propKey.type === 'Identifier') {
@@ -34,8 +45,8 @@ function getPropName(propKey: any) {
   }
 }
 
-function parseFunction(s: MagicString, node: FunctionExpression): IPublicTypeJSFunction {
-  const code = s.slice(node.start!, node.end!);
+function parseFunction(s: MagicString, node: any): IPublicTypeJSFunction {
+  const code = s.slice(node.start, node.end);
   let prefix = '';
   if (node.async) {
     prefix += 'async ';
@@ -49,6 +60,42 @@ function parseFunction(s: MagicString, node: FunctionExpression): IPublicTypeJSF
   };
 }
 
+function parseExpression(s: MagicString, node: any): IPublicTypeJSExpression {
+  return {
+    type: 'JSExpression',
+    value: s.slice(node.start, node.end),
+  };
+}
+
+function parseObjectExpression(s: MagicString, node: any): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
+  for (const prop of node.properties) {
+    if (prop.value.type === 'FunctionExpression') {
+      properties[getPropName(prop.key)] = parseFunction(s, prop.value);
+    } else if (prop.value.type === 'Literal') {
+      properties[getPropName(prop.key)] = prop.value.value;
+    } else if (prop.value.type === 'ArrayExpression') {
+      const elements: unknown[] = (properties[getPropName(prop.key)] = []);
+      for (const element of prop.value.elements) {
+        if (element.type === 'ObjectExpression') {
+          elements.push(parseObjectExpression(s, element));
+        } else if (element.type === 'FunctionExpression') {
+          elements.push(parseFunction(s, element));
+        } else if (element.type === 'Literal') {
+          elements.push(element.value);
+        } else {
+          elements.push(parseExpression(s, element));
+        }
+      }
+    } else if (prop.value.type === 'ObjectExpression') {
+      properties[getPropName(prop.key)] = parseObjectExpression(s, prop.value);
+    } else {
+      properties[getPropName(prop.key)] = parseExpression(s, prop.value);
+    }
+  }
+  return properties;
+}
+
 export function parseCode(id: string, code: string, libraryMap: Record<string, string>) {
   const s = new MagicString(code);
   const program = parse(code, {
@@ -56,53 +103,35 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
     sourceType: 'module',
   }) as Program;
 
-  let name = '';
-  const data = {};
+  const state = {};
   const methods = {};
   const lifeCycles = {};
 
   const statements: UsageStatement[] = [];
-  const globalVars = new Set<string>();
+  const globalVars: Record<string, string> = {};
 
-  let compNode: ObjectExpression | null = null;
+  let compNode: any = null;
   if (program.type === 'Program') {
     for (const node of program.body) {
       if (node.type === 'ImportDeclaration') {
         const from = node.source.value;
         node.specifiers.forEach((item) => {
-          if (item.type === 'ImportSpecifier') {
-            const statement: ImportStatement = {
-              type: 'import',
-              from,
-              importedName:
-                item.imported.type === 'Identifier'
+          const localName = parseLocalName(item.local.name);
+          globalVars[localName] = localName;
+          statements.push({
+            type: 'import',
+            from,
+            importedName:
+              item.type === 'ImportSpecifier'
+                ? item.imported.type === 'Identifier'
                   ? item.imported.name
-                  : item.imported.value,
-              name: item.local.name,
-            };
-            globalVars.add(statement.name);
-            statements.push(statement);
-          } else if (item.type === 'ImportDefaultSpecifier') {
-            const statement: ImportStatement = {
-              type: 'import',
-              from,
-              importedName: 'default',
-              name: item.local.name,
-            };
-            globalVars.add(statement.name);
-            statements.push(statement);
-          } else {
-            const statement: ImportStatement = {
-              type: 'import',
-              from,
-              importedName: null,
-              name: item.local.name,
-            };
-            globalVars.add(statement.name);
-            statements.push(statement);
-          }
+                  : item.imported.value
+                : item.type === 'ImportDefaultSpecifier'
+                ? 'default'
+                : null,
+            name: localName,
+          });
         });
-        continue;
       } else if (node.type === 'ExportDefaultDeclaration') {
         const declaration = node.declaration;
         if (
@@ -116,35 +145,45 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
         } else if (declaration.type === 'ObjectExpression') {
           compNode = declaration;
         }
-        continue;
       } else if (
         node.type === 'ExportAllDeclaration' ||
         node.type === 'ExportNamedDeclaration'
       ) {
         // ignore export * from 'xxx' & export const xxx & export { xxx }
-        continue;
-      } else if (node.type === 'VariableDeclaration') {
-        node.declarations.forEach((d) => {
-          if (d.id.type === 'Identifier') {
-            globalVars.add(d.id.name);
+        // do nothing
+      } else {
+        if (node.type === 'VariableDeclaration') {
+          node.declarations.forEach((d) => {
+            if (d.id.type === 'Identifier') {
+              const localName = parseLocalName(d.id.name);
+              globalVars[d.id.name] = localName;
+              if (localName !== d.id.name) {
+                s.overwrite(d.id.start!, d.id.end!, localName);
+              }
+            }
+          });
+        } else if (node.type === 'FunctionDeclaration') {
+          if (node.id?.name) {
+            const localName = parseLocalName(node.id.name);
+            globalVars[node.id.name] = localName;
+            if (localName !== node.id.name) {
+              s.overwrite(node.id.start!, node.id.end!, localName);
+            }
           }
-        });
-      } else if (node.type === 'FunctionDeclaration') {
-        if (node.id?.name) {
-          globalVars.add(node.id.name);
         }
+        statements.push({
+          type: 'expression',
+          code: s.slice(node.start!, node.end!),
+        });
       }
-      statements.push({
-        type: 'expression',
-        code: s.slice(node.start!, node.end!),
-      });
     }
   }
 
+  const varCount = Object.keys(globalVars).length;
   // 初始化 module
   if (
-    (globalVars.size > 1 && globalVars.has('defineComponent')) ||
-    (globalVars.size > 0 && !globalVars.has('defineComponent'))
+    (varCount > 1 && 'defineComponent' in globalVars) ||
+    (varCount > 0 && !('defineComponent' in globalVars))
   ) {
     const code: string[] = [];
     const imports: Record<string, [string | null, string][]> = {};
@@ -165,26 +204,21 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
         } else if (importName === exportName) {
           items.push(importName);
         } else {
-          items.push(`${importName}: exportName`);
+          items.push(`${importName}: ${exportName}`);
         }
       }
       return `const {${items.join(',')}} = $scope["${name}"];`;
     });
     code.unshift(...importCodes);
-    globalVars.forEach((varName) => {
-      code.push(`  exports.${varName} = ${varName};`);
+    Object.keys(globalVars).forEach((varName) => {
+      code.push(`  exports.${varName} = ${globalVars[varName]};`);
     });
-    lifeCycles['initModule'] = {
-      type: 'JSExpression',
-      value: initModuleTemp
-        .replace('@{id}', JSON.stringify(id))
-        .replace('@{expressions}', code.join('\n')),
-    };
+    lifeCycles['initModule'] = createInitModuleCode(id, code.join('\n'));
   }
 
   // 处理组件内容
   if (compNode != null) {
-    for (const property of compNode.properties as any[]) {
+    for (const property of compNode.properties) {
       if (property.computed || property.shorthand) {
         continue;
       }
@@ -193,137 +227,91 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
 
       switch (property.key.name) {
         case 'data': {
-          let dataProperies: any[] | null = null;
-          if (!method && value.type === 'ArrowFunctionExpression') {
+          let dataObject: any = null;
+          if (value.type === 'ArrowFunctionExpression') {
             if (value.body.type === 'ObjectExpression') {
-              dataProperies = value.body.properties;
-            }
-          } else if (method && value.type === 'FunctionExpression') {
-            if (
+              /**
+               * // 解析箭头函数语法，且直接返回一个对象字面量
+               * ```js
+               * {
+               *    data: () => ({
+               *      name: 'name'
+               *    })
+               * }
+               * ```
+               */
+              dataObject = value.body;
+            } else if (
+              value.body.type === 'BlockStatement' &&
               value.body.body.length === 1 &&
               value.body.body[0].type === 'ReturnStatement' &&
               value.body.body[0].argument.type === 'ObjectExpression'
             ) {
-              dataProperies = value.body.body[0].argument.properties;
-            } else {
+              /**
+               * // 解析箭头函数语法，且直接返回一个对象字面量
+               * ```js
+               * {
+               *    data: () => {
+               *      return {
+               *        name: 'name'
+               *      }
+               *    }
+               * }
+               * ```
+               */
+              dataObject = value.body.body[0].argument;
             }
+          } else if (
+            value.type === 'FunctionExpression' &&
+            value.body.type === 'BlockStatement' &&
+            value.body.body.length === 1 &&
+            value.body.body[0].type === 'ReturnStatement' &&
+            value.body.body[0].argument.type === 'ObjectExpression'
+          ) {
+            /**
+             * // 解析普通函数，且直接返回一个对象字面量
+             * ```js
+             * {
+             *    data() {
+             *      return {
+             *        name: 'name'
+             *      }
+             *    }
+             * }
+             * ```
+             */
+            dataObject = value.body.body[0].argument;
           }
-          if (dataProperies) {
-            dataProperies.forEach((item) => {
-              if (item.value.type === 'Literal' && !item.value.regex) {
-                data[getPropName(item.key)] = item.value.value;
-              } else if (item.value.type === 'FunctionExpression') {
-                data[getPropName(item.key)] = parseFunction(s, item.value);
-              } else {
-                data[getPropName(item.key)] = {
-                  type: 'JSExpresssion',
-                  value: `${s.slice(item.value.start, item.value.end)}`,
-                };
-              }
-            });
-          } else if (method) {
-            lifeCycles['initData'] = parseFunction(s, value);
-          } else if (value.type === 'ArrowFunctionExpression') {
-            lifeCycles['initData'] = {
-              type: 'JSExpresssion',
-              value: `${s.slice(value.start, value.end)}`,
-            };
+          if (dataObject) {
+            Object.assign(state, parseObjectExpression(s, dataObject));
+          } else {
+            lifeCycles['initData'] = method
+              ? parseFunction(s, value)
+              : parseExpression(s, value);
           }
           break;
         }
         case 'props': {
           if (value.type === 'ArrayExpression' || value.type === 'ObjectExpression') {
-            lifeCycles['initProps'] = {
-              type: 'JSExpression',
-              value: s.slice(value.start, value.end),
-            };
+            lifeCycles['initProps'] = parseExpression(s, value);
           }
           break;
         }
+        case 'emits': {
+          if (value.type === 'ArrayExpression' || value.type === 'ObjectExpression') {
+            lifeCycles['initEmits'] = parseExpression(s, value);
+          }
+        }
         case 'methods': {
           if (value.type === 'ObjectExpression') {
-            for (const methdProp of value.properties) {
-              if (methdProp.method && methdProp.value.type === 'FunctionExpression') {
-                methods[getPropName(methdProp.key)] = parseFunction(s, methdProp.value);
-              } else if (
-                !methdProp.method &&
-                methdProp.value.type === 'ArrowFunctionExpression'
-              ) {
-                methods[getPropName(methdProp.key)] = {
-                  type: 'JSExpression',
-                  value: `${s.slice(methdProp.value.start, methdProp.value.end)}`,
-                };
-              }
-            }
+            Object.assign(methods, parseObjectExpression(s, value));
           }
           break;
         }
         case 'watch': {
           const initWatch: Record<string, unknown> = {};
           if (value.type === 'ObjectExpression') {
-            for (const watchProp of value.properties) {
-              if (watchProp.value.type === 'FunctionExpression') {
-                initWatch[getPropName(watchProp.key)] = parseFunction(s, watchProp.value);
-              } else if (watchProp.value.type === 'ArrowFunctionExpression') {
-                initWatch[getPropName(watchProp.key)] = {
-                  type: 'JSExpression',
-                  value: `${s.slice(watchProp.value.start, watchProp.value.end)}`,
-                };
-              } else if (watchProp.value.type === 'ArrayExpression') {
-                const watchElements: unknown[] = [];
-                for (const element of watchProp.value.elements) {
-                  if (element.type === 'ObjectExpression') {
-                    const watchProps: Record<string, unknown> = {};
-                    for (const watchProp of element.properties) {
-                      if (watchProp.value.type === 'Literal') {
-                        watchProps[getPropName(watchProp.key)] = watchProp.value.value;
-                      } else if (watchProp.value.type === 'ArrowFunctionExpression') {
-                        watchProps[getPropName(watchProp.key)] = {
-                          type: 'JSExpression',
-                          value: s.slice(watchProp.value.start, watchProp.value.end),
-                        };
-                      } else if (watchProp.value.type === 'FunctionExpression') {
-                        watchProps[getPropName(watchProp.key)] = parseFunction(
-                          s,
-                          watchProp.value
-                        );
-                      }
-                    }
-                    watchElements.push(watchProps);
-                  } else if (element.type === 'FunctionExpression') {
-                    watchElements.push(parseFunction(s, element));
-                  } else if (element.type === 'ArrowFunctionExpression') {
-                    watchElements.push({
-                      type: 'JSExpression',
-                      value: `${s.slice(element.start, element.end)}`,
-                    });
-                  }
-                }
-                if (watchElements.length > 0) {
-                  initWatch[getPropName(watchProp.key)] = watchElements;
-                }
-              } else if (watchProp.value.type === 'ObjectExpression') {
-                const watchProps: Record<string, unknown> = {};
-                for (const watchOption of watchProp.value.properties) {
-                  if (watchOption.value.type === 'Literal') {
-                    watchProps[getPropName(watchOption.key)] = watchOption.value.value;
-                  } else if (watchOption.value.type === 'ArrowFunctionExpression') {
-                    watchProps[getPropName(watchOption.key)] = {
-                      type: 'JSExpression',
-                      value: s.slice(watchOption.value.start, watchOption.value.end),
-                    };
-                  } else if (watchOption.value.type === 'FunctionExpression') {
-                    watchProps[getPropName(watchOption.key)] = parseFunction(
-                      s,
-                      watchOption.value
-                    );
-                  }
-                }
-                initWatch[getPropName(watchProp.key)] = watchProps;
-              } else if (watchProp.value.type === 'Literal') {
-                initWatch[getPropName(watchProp.key)] = watchProp.value.value;
-              }
-            }
+            Object.assign(initWatch, parseObjectExpression(s, value));
           }
           if (Object.keys(initWatch).length > 0) {
             lifeCycles['initWatch'] = initWatch;
@@ -331,54 +319,49 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
           break;
         }
         case 'computed': {
-          const initComputed: Record<string, unknown> = {};
           if (value.type === 'ObjectExpression') {
-            for (const prop of value.properties) {
-              if (prop.value.type === 'FunctionExpression') {
-                initComputed[getPropName(prop.key)] = parseFunction(s, prop.value);
-              } else if (prop.value.type === 'ArrowFunctionExpression') {
-                initComputed[getPropName(prop.key)] = {
-                  type: 'JSExpression',
-                  value: `${s.slice(prop.value.start, prop.value.end)}`,
-                };
-              } else if (prop.value.type === 'ObjectExpression') {
-                const computedProps: Record<string, unknown> = {};
-                for (const computedProp of prop.value.properties) {
-                  if (computedProp.value.type === 'ArrowFunctionExpression') {
-                    computedProps[getPropName(computedProp.key)] = {
-                      type: 'JSExpression',
-                      value: s.slice(computedProp.value.start, computedProp.value.end),
-                    };
-                  } else if (computedProp.value.type === 'FunctionExpression') {
-                    computedProps[getPropName(computedProp.key)] = parseFunction(
-                      s,
-                      computedProp.value
-                    );
-                  }
-                }
-                initComputed[getPropName(prop.key)] = computedProps;
-              }
+            const initComputed = parseObjectExpression(s, value);
+            if (Object.keys(initComputed).length > 0) {
+              lifeCycles['initComputed'] = initComputed;
             }
-          }
-          if (Object.keys(initComputed).length > 0) {
-            lifeCycles['initComputed'] = initComputed;
           }
           break;
         }
-        default:
+        case 'provide': {
+          if (value.type === 'ObjectExpression') {
+            const initProvide = parseObjectExpression(s, value);
+            if (Object.keys(initProvide).length > 0) {
+              lifeCycles['initProvide'] = initProvide;
+            }
+          } else if (value.type === 'FunctionExpression') {
+            lifeCycles['initProvide'] = parseExpression(s, value);
+          } else if (value.type === 'ArrowFunctionExpression') {
+            lifeCycles['initProvide'] = parseExpression(s, value);
+          }
+          break;
+        }
+        case 'inject': {
+          if (value.type === 'ObjectExpression') {
+            const initInject: Record<string, unknown> = {};
+            Object.assign(initInject, parseObjectExpression(s, value));
+            if (Object.keys(initInject).length > 0) {
+              lifeCycles['initInject'] = initInject;
+            }
+          } else if (value.type === 'ArrayExpression') {
+            lifeCycles['initInject'] = parseExpression(s, value);
+          }
+          break;
+        }
+        default: {
           if (value.type === 'FunctionExpression') {
             lifeCycles[getPropName(property.key)] = parseFunction(s, value);
           } else if (value.type === 'ArrowFunctionExpression') {
-            lifeCycles[getPropName(property.key)] = {
-              type: 'JSExpression',
-              value: s.slice(value.start, value.end),
-            };
-          } else if (property.key.name === 'name' && value.type === 'Literal') {
-            name = value.value;
+            lifeCycles[getPropName(property.key)] = parseExpression(s, value);
           }
+        }
       }
     }
   }
 
-  return { name, data, methods, lifeCycles };
+  return { state, methods, lifeCycles };
 }

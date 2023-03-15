@@ -54,14 +54,14 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
       const code = codeRef.current;
       const transformed = { ...rawSchema };
       const libraryMap = getLibraryMap(props.material);
-      const { data, methods, lifeCycles } = parseCode(
+      const { state, methods, lifeCycles } = parseCode(
         transformed.id || (transformed.id = generate()),
         code,
         libraryMap
       );
 
-      Object.keys(data).length > 0
-        ? (transformed.state = data)
+      Object.keys(state).length > 0
+        ? (transformed.state = state)
         : delete transformed.state;
 
       Object.keys(methods).length > 0
