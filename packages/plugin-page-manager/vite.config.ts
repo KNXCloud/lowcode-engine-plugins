@@ -18,7 +18,11 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     rollupOptions: {
-      external: [...Object.keys(dependencies), ...Object.keys(peerDependencies)],
+      external: [
+        ...Object.keys(dependencies),
+        ...Object.keys(peerDependencies),
+        /style\.css$/,
+      ],
     },
   },
   plugins: [
