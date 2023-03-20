@@ -16,29 +16,10 @@
     line-height: 36px;
     white-space: nowrap;
     text-overflow: ellipsis;
+    cursor: pointer;
 
     i {
       margin-right: 6px;
-    }
-
-    .next-input.next-small {
-      height: 16px;
-      min-height: 16px;
-
-      input {
-        height: 16px;
-        min-height: 16px;
-      }
-    }
-
-    &-input {
-      width: calc(100% - 32px);
-    }
-
-    &-file {
-      &:hover {
-        color: #006ce4;
-      }
     }
   }
 
@@ -48,6 +29,12 @@
 
   &:hover {
     background-color: #f0f0f0;
+
+    .list-item-label {
+      &:hover {
+        color: #006ce4;
+      }
+    }
 
     .list-item-btns {
       display: block;

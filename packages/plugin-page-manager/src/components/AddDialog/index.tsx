@@ -1,11 +1,12 @@
 import { Dialog, Input } from '@alifd/next';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export interface ListItemProps {
   type?: 'folder' | 'file';
   title?: string;
   visible: boolean;
   prefix?: string;
+  defaultValue?: string;
   onOk: (value: string | undefined) => void;
   onCancel: () => void;
 }
@@ -15,11 +16,14 @@ export const AddDialog = ({
   visible = false,
   type = 'folder',
   prefix,
+  defaultValue,
   onOk,
   onCancel,
 }: ListItemProps) => {
   const [value, setValue] = useState<string>();
-
+  useEffect(() => {
+    setValue(defaultValue);
+  }, [defaultValue]);
   return (
     <Dialog
       v2
@@ -27,15 +31,15 @@ export const AddDialog = ({
       visible={visible}
       onOk={() => {
         onOk(value);
-        setValue(undefined);
+        setValue('');
       }}
       onCancel={() => {
         onCancel();
-        setValue(undefined);
+        setValue('');
       }}
       onClose={() => {
         onCancel();
-        setValue(undefined);
+        setValue('');
       }}
       style={{ width: '33vw', minWidth: '450px' }}
     >
@@ -45,6 +49,7 @@ export const AddDialog = ({
         size="small"
         placeholder="请输入页面地址"
         style={{ width: '100%' }}
+        value={value}
         onChange={(val) => setValue(val)}
       />
     </Dialog>

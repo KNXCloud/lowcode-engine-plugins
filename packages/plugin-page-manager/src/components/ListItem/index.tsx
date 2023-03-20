@@ -1,68 +1,68 @@
-import { Icon, Input } from '@alifd/next';
-import React, { useState, useRef, useEffect } from 'react';
+import { Dialog, Icon } from '@alifd/next';
+import React from 'react';
 import './index.less';
 
 export interface ListItemProps {
   data: any;
+  active: boolean;
   onDel: (key: null | string) => void;
+  onSelect: (key: null | string) => void;
+  onRename: (key: null | string) => void;
 }
 
-export const ListItem = ({ data, onDel }: ListItemProps) => {
-  const inputRef = useRef<any>(null);
-  const [isEdit, setIsEdit] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (isEdit) {
-      console.log(isEdit, inputRef);
-      inputRef.current?.focus();
-    }
-  }, [isEdit]);
+export const ListItem = ({
+  data,
+  active = false,
+  onDel,
+  onSelect,
+  onRename,
+}: ListItemProps) => {
   return (
-    <div className="list-item">
-      <div className="list-item-label" style={{ width: `${isEdit ? '100%' : '85%'}` }}>
+    <div
+      className="list-item"
+      style={
+        active
+          ? {
+              backgroundColor: '#f5f5f5',
+            }
+          : {}
+      }
+    >
+      <div className="list-item-label" onClick={() => onSelect(data)}>
         <Icon type="form" size="small" />
-        {isEdit ? (
-          <Input
-            size="small"
-            value={data.label}
-            className="list-item-label-input"
-            onBlur={(e) => {
-              console.log('onBlur', e);
-              setIsEdit(!isEdit);
-            }}
-            ref={inputRef}
-          />
-        ) : (
-          <span className="list-item-label-file" title={data.label}>
-            {data.label}
-          </span>
-        )}
+        <span className="list-item-label-file" title={data.fileName}>
+          {data.fileName}
+        </span>
       </div>
-      {!isEdit && (
-        <div className="list-item-btns">
-          <Icon
-            type="edit"
-            title="编辑"
-            className="btn"
-            onClick={() => {
-              setIsEdit(!isEdit);
-              console.log('rename', data);
-            }}
-            size="small"
-          />
+      <div className="list-item-btns">
+        <Icon
+          type="edit"
+          title="重名名"
+          className="btn"
+          onClick={() => {
+            onRename(data);
+          }}
+          size="small"
+        />
 
-          <Icon
-            type="ashbin"
-            title="删除"
-            className="btn"
-            onClick={() => {
-              console.log('del', data);
-              onDel(data.key);
-            }}
-            size="small"
-          />
-        </div>
-      )}
+        <Icon
+          type="ashbin"
+          title="删除"
+          className="btn"
+          onClick={() => {
+            Dialog.confirm({
+              v2: true,
+              title: '提示',
+              content: '是否要删除当前project',
+              messageProps: {
+                type: 'error',
+              },
+              onOk: () => onDel(data),
+            });
+          }}
+          size="small"
+        />
+      </div>
     </div>
   );
 };
