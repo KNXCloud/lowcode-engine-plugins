@@ -56,52 +56,13 @@ export interface LowCodeMeta {
     };
   };
 }
-// const data = [
-//   {
-//     label: 'Page',
-//     key: '1',
-//     children: [
-//       {
-//         label: 'Form',
-//         key: '2',
-//         children: [
-//           {
-//             label: 'Input',
-//             key: '4',
-//           },
-//           {
-//             label: 'Select',
-//             key: '5',
-//           },
-//         ],
-//       },
-//       {
-//         label: 'Display',
-//         key: '3',
-//         children: [
-//           {
-//             label: 'Table',
-//             key: '6',
-//           },
-//         ],
-//       },
-//     ],
-//   },
-// ];
-const dataSource = [];
 
 export const PageMenu = ({ project }: PageMenuProps) => {
-  // openKeys
-  // const [search, setSearch] = useState<string>();
-
   // const schema = project.exportSchema(IPublicEnumTransformStage.Render);
   // schema.meta.vueFolders
   // const vueFolders = schema?.meta?.vueFolders || [];
-  // project.getDocumentByFileName()
 
-  // project.onRemoveDocument
-
-  const [activeKey, setActiveKey] = useState<string>('project');
+  const [activeKey, setActiveKey] = useState<string>('page');
 
   const [selectedKeys, setSelectedKeys] = useState<string[]>();
   // dictionary结构 schema.meta.vueFolders
@@ -111,24 +72,22 @@ export const PageMenu = ({ project }: PageMenuProps) => {
   // 新建/重命名弹窗
   const [visible, setVisible] = useState<boolean>(false);
   const [isAdd, setIsAdd] = useState<boolean>(false);
-  const [current, setCurrent] = useState<any>();
+  const [currentDocId, setCurrentDocId] = useState<string>();
+  const [currentFileName, setCurrentFileName] = useState<string>();
 
   // 当前project/document id
   const [activeProjectId, setActiveProjectId] = useState<string>();
 
   const initialization = () => {
     const schema = project.exportSchema(IPublicEnumTransformStage.Render);
-    const documents: IPublicModelDocumentModel[] = project.documents;
-    // 当前project/document
     const currentDocument: IPublicModelDocumentModel | null = project.currentDocument;
     setActiveProjectId(currentDocument?.id);
-    console.log('当前project/document', currentDocument);
-    // const vueFolders = schema?.meta?.vueFolders || [];
-    // console.log('project', project);
-    console.log('schema', schema.componentsTree);
-    setListData(schema.componentsTree);
-    // console.log('documents', documents);
-    // console.log('vueFolders', vueFolders);
+    const componentsTree = schema.componentsTree.filter(
+      (val) => val.componentName === 'Page'
+    );
+    setListData(componentsTree);
+    console.log('schema', schema);
+    console.log('componentsTree', JSON.stringify(componentsTree));
   };
 
   const renderTreeNodes = (data) => {
@@ -138,7 +97,7 @@ export const PageMenu = ({ project }: PageMenuProps) => {
         if (item.children || item.children.length > 0) {
           return (
             <TreeNode
-              label={<TreeNodeItem data={item} type="folder" onDel={onDel} />}
+              label={<TreeNodeItem data={item} type="folder" onDel={delPage} />}
               key={item.key}
               className="treeNodes"
             >
@@ -148,7 +107,7 @@ export const PageMenu = ({ project }: PageMenuProps) => {
         }
         return (
           <TreeNode
-            label={<TreeNodeItem data={item} type="file" onDel={onDel} />}
+            label={<TreeNodeItem data={item} type="file" onDel={delPage} />}
             key={item.key}
             className="treeNodes"
           />
@@ -157,55 +116,61 @@ export const PageMenu = ({ project }: PageMenuProps) => {
     );
   };
 
-  // 添加 project/document 弹窗
   const onAdd = () => {
     setVisible(true);
     setIsAdd(true);
   };
 
-  // 添加project/document 操作
   const createPage = (fileName) => {
     const addParams: IPublicTypeRootSchema = { componentName: 'Page', fileName };
-    console.log(111111111111, fileName, addParams);
     project.createDocument(addParams);
     setVisible(false);
     initialization();
   };
 
-  // 删除 project/document
-  const onDel = (key) => {
-    const doc: IPublicModelDocumentModel | null = project.getDocumentById(key.docId);
+  const delPage = (docId) => {
+    const doc: IPublicModelDocumentModel | null = project.getDocumentById(docId);
     if (doc) project.removeDocument(doc);
     Message.success('删除成功！');
     initialization();
   };
-  // 选择 project/document
-  const onSelect = (key) => {
-    const doc: IPublicModelDocumentModel | null = project.getDocumentById(key.docId);
-    if (doc) project.openDocument(doc.id);
+
+  const selectPage = (docId) => {
+    if (docId) project.openDocument(docId);
     initialization();
   };
-  // 重命名 project/document 弹窗
-  const onRename = (key) => {
-    setCurrent(key);
+
+  const onRename = (docId, fileName) => {
+    setCurrentFileName(fileName);
+    setCurrentDocId(docId);
     setIsAdd(false);
     setVisible(true);
   };
 
-  // 重命名 project/document 操作
   const renamePage = (fileName) => {
-    const schema = project.exportSchema(IPublicEnumTransformStage.Render);
-    schema.componentsTree.forEach((e) => {
-      if (e.docId == current.docId) {
-        e.fileName = fileName;
-      }
-    });
-    console.log('重命名', schema);
-    project.importSchema(schema);
+    const doc: IPublicModelDocumentModel | null = project.getDocumentById(
+      currentDocId || ''
+    );
+    let schema = doc?.exportSchema(IPublicEnumTransformStage.Render);
+    schema = { ...schema, fileName };
+    doc?.importSchema(schema);
     setVisible(false);
+    Message.success('重命名成功！');
+    setCurrentFileName('');
+    setCurrentDocId('');
     initialization();
   };
+
   useEffect(() => {
+    const arr: IPublicTypeRootSchema[] = [
+      { componentName: 'Page', fileName: 'page/index.vue' },
+      { componentName: 'Page', fileName: 'page/aaa/index.vue' },
+      { componentName: 'Page', fileName: 'page/aaa/aaa_aaa/index.vue' },
+      { componentName: 'Page', fileName: 'page/bbb/index.vue' },
+    ];
+    arr.forEach((item) => {
+      project.createDocument(item);
+    });
     initialization();
   }, []);
   return (
@@ -228,7 +193,7 @@ export const PageMenu = ({ project }: PageMenuProps) => {
               size="small"
               text
               type="primary"
-              title={`新建${activeKey === 'project' ? '文件' : '文件夹'}`}
+              title={`新建${activeKey === 'page' ? '文件' : '文件夹'}`}
               onClick={onAdd}
             >
               Add
@@ -236,13 +201,13 @@ export const PageMenu = ({ project }: PageMenuProps) => {
           }
         >
           {/* List */}
-          <Tab.Item title="Project" key="project">
+          <Tab.Item title="Page" key="page">
             {listData && listData.length > 0 ? (
               listData.map((item) => (
                 <ListItem
                   data={item}
-                  onDel={onDel}
-                  onSelect={onSelect}
+                  onDel={delPage}
+                  onSelect={selectPage}
                   onRename={onRename}
                   key={item.docId}
                   active={item.docId === activeProjectId}
@@ -279,9 +244,9 @@ export const PageMenu = ({ project }: PageMenuProps) => {
       </div>
       <AddDialog
         title={`${isAdd ? '新建' : '重命名'}`}
-        type={activeKey === 'project' ? 'file' : 'folder'}
+        type={activeKey === 'page' ? 'file' : 'folder'}
         visible={visible}
-        defaultValue={current?.fileName}
+        defaultValue={currentFileName}
         onOk={isAdd ? createPage : renamePage}
         onCancel={() => {
           setVisible(false);

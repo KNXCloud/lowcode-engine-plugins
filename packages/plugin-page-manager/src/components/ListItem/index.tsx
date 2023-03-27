@@ -5,9 +5,9 @@ import './index.less';
 export interface ListItemProps {
   data: any;
   active: boolean;
-  onDel: (key: null | string) => void;
-  onSelect: (key: null | string) => void;
-  onRename: (key: null | string) => void;
+  onDel: (docId: string) => void;
+  onSelect: (docId: string) => void;
+  onRename: (docId: string, fileName: string) => void;
 }
 
 export const ListItem = ({
@@ -28,7 +28,7 @@ export const ListItem = ({
           : {}
       }
     >
-      <div className="list-item-label" onClick={() => onSelect(data)}>
+      <div className="list-item-label" onClick={() => onSelect(data.docId)}>
         <Icon type="form" size="small" />
         <span className="list-item-label-file" title={data.fileName}>
           {data.fileName}
@@ -40,7 +40,7 @@ export const ListItem = ({
           title="重名名"
           className="btn"
           onClick={() => {
-            onRename(data);
+            onRename(data.docId, data.fileName);
           }}
           size="small"
         />
@@ -57,7 +57,7 @@ export const ListItem = ({
               messageProps: {
                 type: 'error',
               },
-              onOk: () => onDel(data),
+              onOk: () => onDel(data.docId),
             });
           }}
           size="small"

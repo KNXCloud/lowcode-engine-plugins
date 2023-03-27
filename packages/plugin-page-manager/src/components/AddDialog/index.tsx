@@ -5,7 +5,7 @@ export interface ListItemProps {
   type?: 'folder' | 'file';
   title?: string;
   visible: boolean;
-  prefix?: string;
+  // prefix?: string;
   defaultValue?: string;
   onOk: (value: string | undefined) => void;
   onCancel: () => void;
@@ -15,14 +15,18 @@ export const AddDialog = ({
   title = 'title',
   visible = false,
   type = 'folder',
-  prefix,
+  // prefix = '',
   defaultValue,
   onOk,
   onCancel,
 }: ListItemProps) => {
   const [value, setValue] = useState<string>();
   useEffect(() => {
-    setValue(defaultValue);
+    if (type !== 'folder') {
+      setValue(defaultValue?.split('.vue')[0]);
+    } else {
+      setValue(defaultValue);
+    }
   }, [defaultValue]);
   return (
     <Dialog
@@ -30,7 +34,8 @@ export const AddDialog = ({
       title={title}
       visible={visible}
       onOk={() => {
-        onOk(value);
+        // onOk(`${prefix}${value}${type === 'folder' ? '' : '.vue'}`);
+        onOk(`${value}${type === 'folder' ? '' : '.vue'}`);
         setValue('');
       }}
       onCancel={() => {
@@ -44,7 +49,7 @@ export const AddDialog = ({
       style={{ width: '33vw', minWidth: '450px' }}
     >
       <Input
-        addonTextBefore={prefix ? prefix : null}
+        // addonTextBefore={prefix ? prefix : null}
         addonTextAfter={type === 'folder' ? null : '.vue'}
         size="small"
         placeholder="请输入页面地址"
