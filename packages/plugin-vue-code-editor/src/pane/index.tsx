@@ -13,7 +13,7 @@ import {
   isObject,
 } from '@knxcloud/lowcode-utils';
 import { Tab } from '@alifd/next';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SaveIcon, JsEditor } from '../components';
 import MonacoEditor from '@alilc/lowcode-plugin-base-monaco-editor';
 import './index.less';
@@ -27,6 +27,11 @@ interface CodeEditorPaneProps {
   material: IPublicApiMaterial;
 }
 
+enum TAB_KEY {
+  JS = 'js_tab',
+  CSS = 'css_tab',
+}
+
 function getIndentStr(indent: number) {
   let indentStr = '';
   while (indent--) {
@@ -35,7 +40,7 @@ function getIndentStr(indent: number) {
   return indentStr;
 }
 
-const guessValueType = (val: unknown) => {
+function guessValueType(val: unknown) {
   if (isString(val)) {
     return 'String';
   } else if (Array.isArray(val)) {
@@ -44,9 +49,9 @@ const guessValueType = (val: unknown) => {
     return 'Object';
   }
   return 'null';
-};
+}
 
-const guessStrValueType = (val: string) => {
+function guessStrValueType(val: string) {
   if (val === 'true' || val === 'false') {
     return 'Boolean';
   } else if (!isNaN(Number(val))) {
@@ -60,7 +65,7 @@ const guessStrValueType = (val: string) => {
       return 'String';
     }
   }
-};
+}
 
 function parseSchemaToCode(schema: Record<string, unknown>, indent: number): string {
   const indentStr = [getIndentStr(indent)];
@@ -130,8 +135,9 @@ function parsePropsToCode(schema: Record<string, unknown>, indent: number): stri
   return code.join('\n');
 }
 
-export const CodeEditorPane = ({ project, material }: CodeEditorPaneProps) => {
-  const editor = useRef<JsEditorInst>();
+export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps) => {
+  const editor = useRef<JsEditorInst | null>(null);
+  const [currentTab, setCurrentTab] = useState(TAB_KEY.JS);
   const [schema, setSchema] = useState<IPublicTypeRootSchema>(() => {
     return project.currentDocument
       ? project.currentDocument.exportSchema(IPublicEnumTransformStage.Render)
@@ -194,19 +200,27 @@ export const CodeEditorPane = ({ project, material }: CodeEditorPaneProps) => {
     setSchema(newSchema);
   }, []);
 
+  useEffect(() => {
+    return event.on('common:codeEditor.addFunction', (data) => {
+      setCurrentTab(TAB_KEY.JS);
+      setTimeout(() => editor.current?.addFunction(data), 100);
+    });
+  }, [event]);
+
   return (
     <div className=":uno: flex flex-1 items-center text-15px w-full h-full vue-code-pane">
       <Tab
         className=":uno: h-full flex flex-col"
         shape="wrapped"
         size="small"
+        accessKey={currentTab}
+        onChange={(key) => setCurrentTab(key as TAB_KEY)}
         extra={<SaveIcon onClick={doSave}></SaveIcon>}
       >
-        <Tab.Item title="index.js">
-          {/* @ts-ignore */}
+        <Tab.Item key={TAB_KEY.JS} title="index.js">
           <JsEditor material={material} ref={editor} jsCode={jsCode}></JsEditor>
         </Tab.Item>
-        <Tab.Item title="index.css">
+        <Tab.Item key={TAB_KEY.CSS} title="index.css">
           <MonacoEditor
             language="css"
             value={cssCode.current}

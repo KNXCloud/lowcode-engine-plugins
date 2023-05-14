@@ -127,12 +127,13 @@ importers:
       acorn: ^8.8.2
       less: ^4.1.3
       magic-string: ^0.30.0
+      monaco-editor: ^0.36.1
       short-uuid: ^4.2.2
       unocss: ^0.50.4
       vite: ^4.1.4
       vite-plugin-lib-types: ^0.1.2
     dependencies:
-      '@alilc/lowcode-plugin-base-monaco-editor': 1.1.1
+      '@alilc/lowcode-plugin-base-monaco-editor': 1.1.1_monaco-editor@0.36.1
       '@knxcloud/lowcode-utils': 1.6.0-beta.5_@alilc+lowcode-types@1.1.3
       acorn: 8.8.2
       magic-string: 0.30.0
@@ -141,11 +142,12 @@ importers:
       '@alifd/next': 1.26.15
       '@alilc/lowcode-types': 1.1.3
       '@babel/types': 7.21.2
-      '@monaco-editor/loader': 1.3.2
+      '@monaco-editor/loader': 1.3.2_monaco-editor@0.36.1
       '@types/react': 16.14.35
       '@types/react-dom': 16.9.18
       '@vitejs/plugin-react': 3.1.0_vite@4.1.4
       less: 4.1.3
+      monaco-editor: 0.36.1
       unocss: 0.50.4_vite@4.1.4
       vite: 4.1.4_less@4.1.3
       vite-plugin-lib-types: 0.1.2_vite@4.1.4
@@ -375,6 +377,15 @@ packages:
       classnames: 2.3.2
     transitivePeerDependencies:
       - monaco-editor
+
+  /@alilc/lowcode-plugin-base-monaco-editor/1.1.1_monaco-editor@0.36.1:
+    resolution: {integrity: sha512-6IC4oSveL2FnPZ5igfWNkB0oXkTbbCD5EUAxH1CinGdnWA2SYBq8Nl8hrDBdimMKE+bPIsWee77MLikDi7IEFQ==}
+    dependencies:
+      '@monaco-editor/loader': 1.3.0_monaco-editor@0.36.1
+      classnames: 2.3.2
+    transitivePeerDependencies:
+      - monaco-editor
+    dev: false
 
   /@alilc/lowcode-plugin-components-pane/1.0.7:
     resolution: {integrity: sha512-+QIwI81Lc6jrXbH0twXoGABsQFaFOKqD0rla8JLGx6N/NtkuABygtIRIvErQP5SYMc8ul7Kxt7isDwsrT+HbYg==}
@@ -1221,11 +1232,21 @@ packages:
     dependencies:
       state-local: 1.0.7
 
-  /@monaco-editor/loader/1.3.2:
+  /@monaco-editor/loader/1.3.0_monaco-editor@0.36.1:
+    resolution: {integrity: sha512-N3mGq1ktC3zh7WUx3NGO+PSDdNq9Vspk/41rEmRdrCqV9vNbBTRzAOplmUpNQsi+hmTs++ERMBobMERb8Kb+3g==}
+    peerDependencies:
+      monaco-editor: '>= 0.21.0 < 1'
+    dependencies:
+      monaco-editor: 0.36.1
+      state-local: 1.0.7
+    dev: false
+
+  /@monaco-editor/loader/1.3.2_monaco-editor@0.36.1:
     resolution: {integrity: sha512-BTDbpHl3e47r3AAtpfVFTlAi7WXv4UQ/xZmz8atKl4q7epQV5e7+JbigFDViWF71VBi4IIBdcWP57Hj+OWuc9g==}
     peerDependencies:
       monaco-editor: '>= 0.21.0 < 1'
     dependencies:
+      monaco-editor: 0.36.1
       state-local: 1.0.7
     dev: true
 
@@ -5558,6 +5579,9 @@ packages:
 
   /mobx/6.8.0:
     resolution: {integrity: sha512-+o/DrHa4zykFMSKfS8Z+CPSEg5LW9tSNGTuN8o6MF1GKxlfkSHSeJn5UtgxvPkGgaouplnrLXCF+duAsmm6FHQ==}
+
+  /monaco-editor/0.36.1:
+    resolution: {integrity: sha512-/CaclMHKQ3A6rnzBzOADfwdSJ25BFoFT0Emxsc4zYVyav5SkK9iA6lEtIeuN/oRYbwPgviJT+t3l+sjFa28jYg==}
 
   /moo/0.5.2:
     resolution: {integrity: sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==}

@@ -370,3 +370,46 @@ export function parseCode(id: string, code: string, libraryMap: Record<string, s
 
   return { state, methods, lifeCycles };
 }
+
+export function findOptionNode(program: any, optionName: string) {
+  let compNode: any = null;
+
+  if (program.type === 'Program') {
+    for (const node of program.body) {
+      if (node.type === 'ExportDefaultDeclaration') {
+        const declaration = node.declaration;
+        if (
+          declaration.type === 'CallExpression' &&
+          declaration.callee.type === 'Identifier' &&
+          declaration.callee.name === 'defineComponent' &&
+          declaration.arguments.length > 0 &&
+          declaration.arguments[0].type === 'ObjectExpression'
+        ) {
+          compNode = declaration.arguments[0];
+        } else if (declaration.type === 'ObjectExpression') {
+          compNode = declaration;
+        }
+        break;
+      }
+    }
+  }
+
+  if (!compNode) return null;
+
+  if (optionName === 'root') {
+    return compNode;
+  }
+
+  for (const property of compNode.properties) {
+    if (property.computed || property.shorthand) {
+      continue;
+    }
+
+    const { value, key } = property;
+    if (key.name === optionName) {
+      return value;
+    }
+  }
+
+  return null;
+}
