@@ -12,7 +12,6 @@ import AliLowCodeEngineExt from '@alilc/lowcode-engine-ext';
 import SchemaPlugin from '@alilc/lowcode-plugin-schema';
 import ComponentsPane from '@alilc/lowcode-plugin-components-pane';
 import CodeEditor from '@knxcloud/lowcode-plugin-vue-code-editor';
-import PageManager from '@knxcloud/lowcode-plugin-page-manager';
 import { setupHostEnvironment } from '@knxcloud/lowcode-utils';
 import { getProjectSchemaToLocalStorage, saveSchema } from './utils/store';
 import { Button, Message } from '@alifd/next';
@@ -27,7 +26,6 @@ const save = async () => {
 (async () => {
   await plugins.register(SchemaPlugin);
   await plugins.register(CodeEditor);
-  await plugins.register(PageManager);
 
   // 注册组件面板
   const componentsPane = skeleton.add({

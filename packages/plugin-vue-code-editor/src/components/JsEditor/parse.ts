@@ -22,7 +22,7 @@ type UsageStatement = ImportStatement | NormalStatement;
 
 function createInitModuleCode(id: string, code: string) {
   return `(() => {const $id = ${JSON.stringify(
-    id
+    id,
   )}; return ($cached, $scope = window) => {
   if ($id in $cached) return $cached[$id];
   const exports = $cached[$id] = {};

@@ -1,10 +1,10 @@
-import {
-  type IPublicApiProject,
-  type IPublicApiSkeleton,
-  type IPublicApiEvent,
-  type IPublicTypeRootSchema,
-  IPublicEnumTransformStage,
-  type IPublicApiMaterial,
+import { IPublicEnumTransformStage } from '@alilc/lowcode-types';
+import type {
+  IPublicApiProject,
+  IPublicApiSkeleton,
+  IPublicApiEvent,
+  IPublicTypeRootSchema,
+  IPublicApiMaterial,
 } from '@alilc/lowcode-types';
 import {
   isString,
@@ -78,7 +78,7 @@ function parseSchemaToCode(schema: Record<string, unknown>, indent: number): str
       code.push(
         `${indentStr[0]}${schemaItem.value
           .replace(/^function\s*/, '')
-          .replace(/\n\s*/g, `$&${indentStr[0]}`)},`
+          .replace(/\n\s*/g, `$&${indentStr[0]}`)},`,
       );
     } else {
       const type = isString(schemaItem)
@@ -87,7 +87,7 @@ function parseSchemaToCode(schema: Record<string, unknown>, indent: number): str
       code.push(
         `${indentStr[0]}${name}: ${
           type === 'String' ? JSON.stringify(schemaItem) : schemaItem
-        },`
+        },`,
       );
     }
   }
@@ -114,7 +114,7 @@ function parsePropsToCode(schema: Record<string, unknown>, indent: number): stri
       code.push(
         `${indentStr[0]}default${schemaItem.value
           .replace(/^function[^(]*/, '')
-          .replace(/\n\s*/g, `$&${indentStr[0]}`)},`
+          .replace(/\n\s*/g, `$&${indentStr[0]}`)},`,
       );
       indentStr.shift();
       code.push(`${indentStr[0]}},`);
@@ -138,9 +138,9 @@ function parsePropsToCode(schema: Record<string, unknown>, indent: number): stri
 export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps) => {
   const editor = useRef<JsEditorInst | null>(null);
   const [currentTab, setCurrentTab] = useState(TAB_KEY.JS);
-  const [schema, setSchema] = useState<IPublicTypeRootSchema>(() => {
+  const [schema, setSchema] = useState<IPublicTypeRootSchema | null>(() => {
     return project.currentDocument
-      ? project.currentDocument.exportSchema(IPublicEnumTransformStage.Render)
+      ? project.currentDocument.exportSchema(IPublicEnumTransformStage.Render) ?? null
       : null;
   });
   const jsCode = useMemo<string>(() => {
@@ -157,7 +157,7 @@ export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps
             ? '\n' + parsePropsToCode(schema.props, Number(indent))
             : '';
           return code.trim() ? matched.replace(placeholder, code) : '';
-        }
+        },
       )
       .replace(
         /\s*data: \(\) => \({(\s*\/\*@{data:(\d+)}\*\/)\s*}\),/,
@@ -166,7 +166,7 @@ export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps
             ? '\n' + parseSchemaToCode(schema.state, Number(indent))
             : defaultStateCode;
           return code.trim() ? matched.replace(placeholder, code) : '';
-        }
+        },
       )
       .replace(
         /\s*methods: {(\s*\/\*@{methods:(\d+)}\*\/)\s*},/,
@@ -175,7 +175,7 @@ export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps
             ? '\n' + parseSchemaToCode(schema.methods, Number(indent))
             : '';
           return code.trim() ? matched.replace(placeholder, code) : '';
-        }
+        },
       )
       .replace(/\s*\/\*@{lifeCycles:(\d+)}\*\//, (_, indent) => {
         const code = schema.lifeCycles
@@ -185,12 +185,15 @@ export const CodeEditorPane = ({ project, material, event }: CodeEditorPaneProps
       })
       .trimStart();
   }, [schema]);
-  const cssCode = useRef<string>(schema.css ?? '');
+  const cssCode = useRef<string>(schema?.css ?? '');
 
   const doSave = useCallback(() => {
     const currentSchema = project.currentDocument
       ? project.currentDocument.exportSchema(IPublicEnumTransformStage.Render)
       : schema;
+    if (!currentSchema) {
+      throw new Error('schema is empty');
+    }
     const newSchema = editor.current?.transformSchema(currentSchema) ?? currentSchema;
     newSchema.css = cssCode.current;
     if (project.currentDocument) {

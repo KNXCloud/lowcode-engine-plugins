@@ -38,10 +38,12 @@ const plugin = ({ project, skeleton, event, material }: IPublicModelPluginContex
         ),
       });
 
-      schemaDock && schemaDock.disable();
-      project.onSimulatorRendererReady(() => {
-        schemaDock.enable();
-      });
+      if (schemaDock) {
+        schemaDock.disable();
+        project.onSimulatorRendererReady(() => {
+          schemaDock.enable();
+        });
+      }
     },
   };
 };

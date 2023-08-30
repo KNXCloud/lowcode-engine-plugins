@@ -41,7 +41,7 @@ export interface JsEditorInst {
 }
 
 function getLibraryMap(material: IPublicApiMaterial) {
-  const packages = material.getAssets().packages ?? [];
+  const packages = material.getAssets()?.packages ?? [];
   const packageMap: Record<string, string> = {
     vue: 'Vue',
     'vue-router': 'VueRouter',
@@ -69,7 +69,7 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
       const { state, methods, lifeCycles } = parseCode(
         transformed.id || (transformed.id = generate()),
         code,
-        libraryMap
+        libraryMap,
       );
 
       Object.keys(state).length > 0
@@ -100,7 +100,7 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
           true,
           false,
           null,
-          false
+          false,
         )?.[0];
       if (matchedResult) {
         setTimeout(() => {
@@ -157,7 +157,7 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
           }
         } else {
           console.error(
-            '[vue-code-editor]: 组件 methdos 选项不是对象字面量，无法自动注册事件处理函数'
+            '[vue-code-editor]: 组件 methdos 选项不是对象字面量，无法自动注册事件处理函数',
           );
         }
       } else {
@@ -175,7 +175,7 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
           }
         } else {
           console.error(
-            '[vue-code-editor]: 组件 Options 未找到，无法自动注册事件处理函数'
+            '[vue-code-editor]: 组件 Options 未找到，无法自动注册事件处理函数',
           );
         }
       }
@@ -219,7 +219,7 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
     monaco.languages.typescript.typescriptDefaults.addExtraLib(vueTypeCode, 'vue.d.ts');
     monaco.languages.typescript.typescriptDefaults.addExtraLib(
       vueRouterTypeCode,
-      'vue-router.d.ts'
+      'vue-router.d.ts',
     );
   }, []);
 
