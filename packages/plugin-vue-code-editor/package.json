@@ -3,7 +3,7 @@
   "main": "./dist/lowcode-plugin-vue-code-editor.js",
   "module": "./dist/lowcode-plugin-vue-code-editor.mjs",
   "typings": "./dist/lowcode-plugin-vue-code-editor.d.ts",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "scripts": {
     "start": "vite build --watch",
     "build": "vite build",

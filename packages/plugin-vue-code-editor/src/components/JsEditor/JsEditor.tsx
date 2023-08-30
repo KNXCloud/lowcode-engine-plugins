@@ -116,7 +116,6 @@ const JsEditor = forwardRef<JsEditorInst, JsEditorProps>((props, ref) => {
       }
     },
     addFunction(params: FunctionEventParams) {
-      debugger;
       const { current: monaco } = monacoRef;
       const { current: editor } = editorRef;
       const { current: code } = codeRef;
