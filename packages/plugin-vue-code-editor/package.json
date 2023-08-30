@@ -3,10 +3,11 @@
   "main": "./dist/lowcode-plugin-vue-code-editor.js",
   "module": "./dist/lowcode-plugin-vue-code-editor.mjs",
   "typings": "./dist/lowcode-plugin-vue-code-editor.d.ts",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "scripts": {
     "start": "vite build --watch",
-    "build": "vite build"
+    "build": "vite build",
+    "prepack": "vite build"
   },
   "dependencies": {
     "@alilc/lowcode-plugin-base-monaco-editor": "^1.1.2",
