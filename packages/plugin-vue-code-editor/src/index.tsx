@@ -1,21 +1,16 @@
-import type { IPublicModelPluginContext } from '@alilc/lowcode-types';
+import type { IPublicTypePlugin } from '@alilc/lowcode-types';
 import React from 'react';
 import icon from './icon';
 import { CodeEditorPane } from './pane';
 import 'uno.css';
 import './style.css';
 
-const plugin = ({ project, skeleton, event, material }: IPublicModelPluginContext) => {
+const plugin: IPublicTypePlugin = ({ project, skeleton, event, material }) => {
   return {
-    name: 'vueCodeEditor',
-    // 依赖的插件（插件名数组）
-    dep: [],
     // 插件对外暴露的数据和方法
-    exports() {
-      return {};
-    },
+    exports: () => ({}),
     // 插件的初始化函数，在引擎初始化之后会立刻调用
-    init() {
+    async init() {
       const schemaDock = skeleton.add({
         area: 'leftArea',
         name: 'codeEditor',
@@ -48,6 +43,6 @@ const plugin = ({ project, skeleton, event, material }: IPublicModelPluginContex
   };
 };
 
-plugin.pluginName = 'codeEditor';
+plugin.pluginName = 'vueCodeEditor';
 
 export default plugin;
